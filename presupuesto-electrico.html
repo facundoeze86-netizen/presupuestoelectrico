@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Presupuesto ⚡" />
+  <title>Presupuestador Eléctrico ⚡</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <style>* { margin:0; padding:0; box-sizing:border-box; } body { background:#0f1117; }</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script type="text/babel">
+const { useState, useCallback, useRef, useEffect } = React;
+
+
+const DB_TAREAS = {
+  "Instalación residencial": [
+    { nombre: "Cableado en cañería nueva — hasta 50 bocas (por boca)", precio: 36500 },
+    { nombre: "Cableado en cañería nueva — 51 a 100 bocas (por boca)", precio: 35200 },
+    { nombre: "Re-cableado — hasta 50 bocas (por boca)", precio: 45000 },
+    { nombre: "Re-cableado — 51 a 100 bocas (por boca)", precio: 42900 },
+    { nombre: "Canalización embutida PVC — hasta 50 bocas (por boca)", precio: 56700 },
+    { nombre: "Canalización embutida metálica — hasta 50 bocas (por boca)", precio: 58000 },
+    { nombre: "Canalización a la vista PVC — hasta 50 bocas (por boca)", precio: 54000 },
+    { nombre: "Canalización en Durlock PVC 3/4 — hasta 50 bocas (por boca)", precio: 43500 },
+    { nombre: "Colocación aplique 1-2 luces", precio: 29000 },
+    { nombre: "Colocación aplique 3-5 luces", precio: 32500 },
+    { nombre: "Colocación luminaria colgante 1 luz", precio: 47400 },
+    { nombre: "Colocación luminaria colgante 2 luces", precio: 59000 },
+    { nombre: "Colocación luz de emergencia", precio: 42900 },
+    { nombre: "Colocación extractor de baño", precio: 157800 },
+    { nombre: "Colocación extractor de cocina", precio: 223600 },
+    { nombre: "Colocación ventilador de techo sin luces", precio: 96200 },
+    { nombre: "Colocación ventilador de techo con luces", precio: 123400 },
+    { nombre: "Puesta a tierra — jabalina 1.5m + caja inspección", precio: 107900 },
+    { nombre: "Tablero — fijación gabinete superficie (1-54 bocas)", precio: 50000 },
+    { nombre: "Tablero — empotrado en mampostería (1-24 bocas)", precio: 211000 },
+    { nombre: "Tablero — empotrado en mampostería (25-54 bocas)", precio: 240000 },
+    { nombre: "Colocación termomagnética y diferencial — monofásico", precio: 93400 },
+    { nombre: "Acometida monofásica hasta 10 kW", precio: 230100 },
+    { nombre: "Proyecto eléctrico — hasta 25 bocas", precio: 442600 },
+    { nombre: "Proyecto eléctrico — 26 a 50 bocas", precio: 610700 },
+  ],
+  "Instalación comercial": [
+    { nombre: "Cableado en bandeja metálica 300mm (por metro)", precio: 50100 },
+    { nombre: "Cableado en bandeja metálica 450mm (por metro)", precio: 54500 },
+    { nombre: "Cableado subterráneo 1x4mm² a 4x16mm² (por metro)", precio: 21800 },
+    { nombre: "Cableado subterráneo 1x25mm² a 4x35mm² (por metro)", precio: 43600 },
+    { nombre: "Canalización cablecanal — 1 a 50 bocas (por boca)", precio: 47100 },
+    { nombre: "Pisoducto — instalación (por metro)", precio: 39000 },
+    { nombre: "CCTV — instalación en superficie por cámara", precio: 85500 },
+    { nombre: "CCTV — con canalización por cámara", precio: 122700 },
+    { nombre: "CCTV — BCR 3 cámaras en superficie", precio: 298400 },
+    { nombre: "CCTV — BCR 6 cámaras con canalización", precio: 441900 },
+    { nombre: "Artefacto tubo LED simple", precio: 54500 },
+    { nombre: "Artefacto tubo LED doble", precio: 66100 },
+    { nombre: "Acometida trifásica hasta 10 kW", precio: 328300 },
+    { nombre: "Acometida trifásica 11 a 35 kW", precio: 425000 },
+    { nombre: "Proyecto eléctrico — 51 a 100 bocas", precio: 721700 },
+    { nombre: "Proyecto eléctrico — 101 a 500 bocas", precio: 1117100 },
+  ],
+  "Tablero eléctrico": [
+    { nombre: "Fijación gabinete de superficie (1-54 bocas)", precio: 46900 },
+    { nombre: "Empotrado en mampostería (1-24 bocas)", precio: 197500 },
+    { nombre: "Empotrado en mampostería (25-54 bocas)", precio: 225000 },
+    { nombre: "Colocación termomagnética y diferencial — monofásico", precio: 87300 },
+    { nombre: "Colocación termomagnética y diferencial — trifásico", precio: 123100 },
+    { nombre: "Corrección de potencia — monofásico hasta 2 Kvar", precio: 284000 },
+    { nombre: "Corrección de potencia — trifásico hasta 10 Kvar", precio: 320400 },
+  ],
+  "Reparación / Mantenimiento": [
+    { nombre: "Emergencia Lun-Vie hasta 5km (por hora, mín. 4hs)", precio: 71500 },
+    { nombre: "Emergencia Lun-Vie hasta 10km (por hora)", precio: 84200 },
+    { nombre: "Emergencia Sáb/Dom/Feriado hasta 5km (por hora)", precio: 99800 },
+    { nombre: "Hora adicional emergencia", precio: 27200 },
+    { nombre: "Oficial electricista especializado (por hora — UOCRA Zona A)", precio: 7380 },
+    { nombre: "Oficial electricista (por hora — UOCRA Zona A)", precio: 6000 },
+    { nombre: "Ayudante electricista (por hora — UOCRA Zona A)", precio: 5061 },
+    { nombre: "Re-cableado — hasta 50 bocas (por boca)", precio: 42100 },
+    { nombre: "Colocación termomagnética y diferencial — monofásico", precio: 87300 },
+  ],
+};
+
+const DB_MATERIALES = {
+  "Cables y conductores": [
+    { nombre: "Cable unipolar IRAM 1.5mm² — rollo 100m", precio: 47000 },
+    { nombre: "Cable unipolar IRAM 1.5mm² — rollo 50m", precio: 24000 },
+    { nombre: "Cable unipolar IRAM 2.5mm² — rollo 100m", precio: 81000 },
+    { nombre: "Cable unipolar IRAM 2.5mm² — rollo 50m", precio: 41000 },
+    { nombre: "Cable unipolar IRAM 4mm² — rollo 100m", precio: 115000 },
+    { nombre: "Cable unipolar IRAM 4mm² — rollo 50m", precio: 51000 },
+    { nombre: "Cable unipolar IRAM 6mm² — rollo 100m", precio: 170000 },
+    { nombre: "Cable unipolar IRAM 6mm² — rollo 50m", precio: 87000 },
+    { nombre: "Cable unipolar IRAM 10mm² — rollo 100m", precio: 300000 },
+    { nombre: "Cable unipolar IRAM 10mm² — rollo 50m", precio: 153000 },
+    { nombre: "Cable tierra verde/amarillo IRAM 2.5mm² — 100m", precio: 75000 },
+    { nombre: "Cable tierra verde/amarillo IRAM 2.5mm² — 50m", precio: 38000 },
+    { nombre: "Cable VAFLEX 2x1.5mm² (rollo 100m)", precio: 65000 },
+    { nombre: "Cable VAFLEX 2x2.5mm² (rollo 100m)", precio: 125000 },
+    { nombre: "Cable VAFLEX 3x2.5mm² (rollo 100m)", precio: 145000 },
+    { nombre: "Cable UTP cat6 normalizado (rollo 100m)", precio: 45000 },
+  ],
+  "Caños y canaletas": [
+    { nombre: "Caño corrugado Ø20mm ignífugo (tira 3m)", precio: 7500 },
+    { nombre: "Caño corrugado Ø25mm ignífugo (tira 3m)", precio: 9500 },
+    { nombre: "Caño corrugado Ø32mm ignífugo (tira 3m)", precio: 13000 },
+    { nombre: "Caño semirígido Ø20mm (tira 3m)", precio: 10500 },
+    { nombre: "Caño semirígido Ø25mm (tira 3m)", precio: 12000 },
+    { nombre: "Caño PVC rígido Ø20mm (tira 3m)", precio: 11000 },
+    { nombre: "Caño PVC rígido Ø25mm (tira 3m)", precio: 15500 },
+    { nombre: "Canaleta PVC 20x10mm (tira 2m)", precio: 4500 },
+    { nombre: "Canaleta PVC 40x25mm (tira 2m)", precio: 9000 },
+    { nombre: "Canaleta PVC 60x40mm (tira 2m)", precio: 16000 },
+  ],
+  "Cajas y accesorios": [
+    { nombre: "Caja rectangular PVC embutir Genrod (pack x10)", precio: 16700 },
+    { nombre: "Caja rectangular PVC superficie Genrod (pack x10)", precio: 20600 },
+    { nombre: "Caja cuadrada 10x10cm PVC", precio: 1800 },
+    { nombre: "Caja octogonal PVC", precio: 2000 },
+    { nombre: "Caja de paso 10x10cm", precio: 3500 },
+    { nombre: "Caja de paso 15x15cm", precio: 5500 },
+    { nombre: "Caja de paso 20x20cm", precio: 9000 },
+    { nombre: "Grampas Ø20mm (pack x20)", precio: 1500 },
+    { nombre: "Terminal ojal 2.5mm (pack x100)", precio: 3500 },
+    { nombre: "Terminal punta hueca 2.5mm (pack x100)", precio: 3200 },
+    { nombre: "Prensacable PG11 (pack x10)", precio: 2500 },
+  ],
+  "Llaves y tomas — Jeluz (económica)": [
+    { nombre: "Módulo interruptor simple Jeluz Verona", precio: 2200 },
+    { nombre: "Módulo interruptor doble Jeluz Verona", precio: 4000 },
+    { nombre: "Módulo interruptor escalera Jeluz Verona", precio: 5500 },
+    { nombre: "Módulo toma bipolar 10A Jeluz Verona", precio: 2800 },
+    { nombre: "Módulo toma bipolar c/tierra 10A Jeluz Verona", precio: 3500 },
+    { nombre: "Módulo toma 20A c/tierra Jeluz (TUE)", precio: 7000 },
+    { nombre: "Módulo toma SCHUKO 16A Jeluz", precio: 5500 },
+    { nombre: "Marco simple Jeluz", precio: 1200 },
+    { nombre: "Marco doble Jeluz", precio: 2000 },
+  ],
+  "Llaves y tomas — Sica (económica)": [
+    { nombre: "Módulo interruptor simple Sica", precio: 2050 },
+    { nombre: "Módulo interruptor doble Sica", precio: 3800 },
+    { nombre: "Módulo interruptor escalera Sica", precio: 5000 },
+    { nombre: "Módulo toma bipolar 10A Sica", precio: 2600 },
+    { nombre: "Módulo toma bipolar c/tierra 10A Sica", precio: 3200 },
+    { nombre: "Módulo toma 20A c/tierra Sica (TUE)", precio: 6500 },
+    { nombre: "Marco simple Sica", precio: 1100 },
+    { nombre: "Marco doble Sica", precio: 1900 },
+  ],
+  "Llaves y tomas — Cambre (premium)": [
+    { nombre: "Módulo interruptor simple Cambre Siglo XXI/XXII", precio: 4500 },
+    { nombre: "Módulo interruptor doble Cambre Siglo XXI/XXII", precio: 7500 },
+    { nombre: "Módulo interruptor escalera Cambre", precio: 9000 },
+    { nombre: "Módulo toma bipolar 10A Cambre (IRAM 63072)", precio: 4500 },
+    { nombre: "Módulo toma bipolar c/tierra 10A Cambre (IRAM 63072)", precio: 6500 },
+    { nombre: "Módulo toma 20A c/tierra Cambre (TUE)", precio: 12000 },
+    { nombre: "Módulo toma SCHUKO 16A Cambre", precio: 9000 },
+    { nombre: "Marco simple Cambre", precio: 2000 },
+    { nombre: "Marco doble Cambre", precio: 3200 },
+  ],
+  "Tableros y protecciones — Sica/Roker": [
+    { nombre: "Caja tablero embutir 4 módulos", precio: 8000 },
+    { nombre: "Caja tablero embutir 8 módulos", precio: 12000 },
+    { nombre: "Caja tablero embutir 12 módulos", precio: 18000 },
+    { nombre: "Caja tablero embutir 16 módulos", precio: 25000 },
+    { nombre: "Caja tablero superficie 12 módulos", precio: 16000 },
+    { nombre: "Termomagnético bipolar 2x10A Sica IRAM", precio: 9000 },
+    { nombre: "Termomagnético bipolar 2x16A Sica IRAM", precio: 11500 },
+    { nombre: "Termomagnético bipolar 2x20A Sica IRAM", precio: 11000 },
+    { nombre: "Termomagnético bipolar 2x32A Sica IRAM", precio: 14000 },
+    { nombre: "Diferencial bipolar 2x25A 30mA Sica", precio: 30000 },
+    { nombre: "Diferencial bipolar 2x40A 30mA Sica", precio: 40000 },
+    { nombre: "Diferencial bipolar 2x63A 30mA Sica", precio: 65000 },
+    { nombre: "Llave principal bipolar 40A Roker", precio: 27000 },
+    { nombre: "Llave principal bipolar 63A Roker", precio: 35000 },
+    { nombre: "Riel DIN 35mm (tira 1m)", precio: 3500 },
+    { nombre: "Peineta monofásica 10 módulos", precio: 7500 },
+  ],
+  "Tableros y protecciones — ABB/Schneider": [
+    { nombre: "Caja tablero embutir 12 módulos premium", precio: 28000 },
+    { nombre: "Caja tablero embutir 16 módulos premium", precio: 38000 },
+    { nombre: "Caja tablero superficie 24 módulos premium", precio: 80700 },
+    { nombre: "Termomagnético bipolar 2x10A ABB/Schneider", precio: 22000 },
+    { nombre: "Termomagnético bipolar 2x16A ABB/Schneider", precio: 24000 },
+    { nombre: "Termomagnético bipolar 2x20A ABB/Schneider", precio: 22000 },
+    { nombre: "Termomagnético bipolar 2x32A ABB/Schneider", precio: 28000 },
+    { nombre: "Diferencial bipolar 2x25A 30mA ABB/Schneider", precio: 55000 },
+    { nombre: "Diferencial bipolar 2x40A 30mA ABB/Schneider", precio: 99200 },
+    { nombre: "Diferencial bipolar 2x63A 30mA ABB/Schneider", precio: 130000 },
+    { nombre: "Llave principal bipolar 40A ABB/Schneider", precio: 38000 },
+    { nombre: "Llave principal bipolar 63A ABB/Schneider", precio: 58000 },
+  ],
+  "Iluminación": [
+    { nombre: "Lámpara LED 9W E27", precio: 3500 },
+    { nombre: "Lámpara LED 13W E27", precio: 5000 },
+    { nombre: "Downlight LED 9W embutido", precio: 7500 },
+    { nombre: "Downlight LED 18W embutido", precio: 12000 },
+    { nombre: "Tira LED 5m c/transformador", precio: 18000 },
+    { nombre: "Aplique exterior IP65", precio: 14000 },
+    { nombre: "Reflector LED 30W exterior", precio: 22000 },
+    { nombre: "Luz de emergencia 1hs autonomía", precio: 18000 },
+    { nombre: "Detector de movimiento 360°", precio: 9000 },
+  ],
+};
+
+const TIPOS = Object.keys(DB_TAREAS);
+const CATS = Object.keys(DB_MATERIALES);
+const uid = () => Math.random().toString(36).slice(2, 8);
+const hoy = () => new Date().toLocaleDateString("es-AR");
+const fmt = (n) => new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n || 0);
+const emptyT = () => ({ id: uid(), nombre: "", tipo: "tarea", precio: "", cantidad: "", horas: "", precioHora: "" });
+const emptyM = () => ({ id: uid(), nombre: "", categoria: CATS[0], cantidad: "", precioUnit: "" });
+
+function Dropdown({ opciones, placeholder, valor, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const ref = useRef(null);
+  const inp = useRef(null);
+  const filtradas = opciones.filter(o => o.nombre.toLowerCase().includes(q.toLowerCase()));
+
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  useEffect(() => { if (open && inp.current) inp.current.focus(); }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flex: 1, minWidth: 0 }}>
+      <button type="button" style={dd.btn} onClick={() => { setOpen(o => !o); setQ(""); }}>
+        <span style={{ flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: valor ? 1 : 0.35, fontSize: 13 }}>
+          {valor || placeholder}
+        </span>
+        <span style={{ color: "#f0c040", fontSize: 9, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={dd.panel}>
+          <div style={dd.searchRow}>
+            <span style={{ opacity: 0.4 }}>🔍</span>
+            <input ref={inp} style={dd.search} placeholder="Buscar..." value={q} onChange={e => setQ(e.target.value)} />
+            {q && <button style={dd.x} onClick={() => setQ("")}>✕</button>}
+          </div>
+          <div style={dd.list}>
+            {filtradas.length === 0 && <div style={dd.empty}>Sin resultados</div>}
+            {filtradas.map((op, i) => (
+              <button key={i} type="button" style={dd.item}
+                onMouseEnter={e => e.currentTarget.style.background = "#1e2235"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}
+                onClick={() => { onSelect(op); setOpen(false); setQ(""); }}>
+                <span style={{ flex: 1 }}>{op.nombre}</span>
+                <span style={dd.precio}>{fmt(op.precio)}</span>
+              </button>
+            ))}
+          </div>
+          <button type="button" style={dd.custom}
+            onClick={() => { onSelect({ nombre: q || "Personalizado", precio: 0 }); setOpen(false); setQ(""); }}>
+            ＋ {q ? `Agregar "${q}"` : "Agregar personalizado"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const dd = {
+  btn: { width: "100%", display: "flex", alignItems: "center", gap: 8, background: "#0f1117", border: "1px solid #3a3d50", borderRadius: 6, color: "#e8e0d0", padding: "12px 14px", fontFamily: "'Courier New',monospace", cursor: "pointer", boxSizing: "border-box" },
+  panel: { position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1d27", border: "1px solid #f0c04066", borderRadius: 8, zIndex: 300, boxShadow: "0 12px 40px #000d", overflow: "hidden" },
+  searchRow: { display: "flex", alignItems: "center", gap: 8, background: "#13151e", borderBottom: "1px solid #2a2d3a", padding: "10px 14px" },
+  search: { flex: 1, background: "none", border: "none", color: "#e8e0d0", fontSize: 14, fontFamily: "'Courier New',monospace", outline: "none" },
+  x: { background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 12 },
+  list: { maxHeight: 280, overflowY: "auto" },
+  item: { width: "100%", display: "flex", alignItems: "flex-start", gap: 10, background: "none", border: "none", borderBottom: "1px solid #1a1d27", color: "#e8e0d0", padding: "12px 14px", fontSize: 12, fontFamily: "'Courier New',monospace", cursor: "pointer", textAlign: "left" },
+  precio: { color: "#f0c040", fontSize: 11, whiteSpace: "nowrap", background: "#f0c04015", border: "1px solid #f0c04033", borderRadius: 4, padding: "2px 6px", flexShrink: 0 },
+  empty: { padding: "14px", fontSize: 12, color: "#555", textAlign: "center" },
+  custom: { width: "100%", background: "#13151e", border: "none", borderTop: "1px solid #2a2d3a", color: "#f0c040", padding: "11px 14px", fontSize: 12, fontFamily: "'Courier New',monospace", cursor: "pointer", textAlign: "left" },
+};
+
+function VistaCliente({ trabajo, tareas, mats, total, onClose }) {
+  return (
+    <div style={vc.wrap}>
+      <div style={vc.header}>
+        <div>
+          <div style={vc.brand}>⚡ PRESUPUESTO</div>
+          <div style={vc.brandSub}>INSTALACIONES ELÉCTRICAS</div>
+        </div>
+        <div style={vc.meta}>
+          <div style={vc.cliente}>{trabajo.cliente || "Cliente"}</div>
+          <div>{trabajo.tipo}</div>
+          <div>{hoy()}</div>
+        </div>
+      </div>
+      {trabajo.descripcion && (
+        <div style={vc.desc}><span style={vc.descLbl}>Descripción: </span>{trabajo.descripcion}</div>
+      )}
+      {tareas.some(t => t.nombre) && (
+        <>
+          <div style={vc.secTit}>MANO DE OBRA</div>
+          {tareas.filter(t => t.nombre).map(t => {
+            const cant = parseFloat(t.cantidad) || 1;
+            const detalle = t.tipo === "hora" && t.horas ? ` (${t.horas}hs)` : cant > 1 ? ` ×${cant}` : "";
+            return <div key={t.id} style={vc.item}>{t.nombre}{detalle}</div>;
+          })}
+        </>
+      )}
+      {mats.some(m => m.nombre) && (
+        <>
+          <div style={vc.secTit}>MATERIALES</div>
+          {mats.filter(m => m.nombre).map(m => {
+            const cant = parseFloat(m.cantidad) || 1;
+            return <div key={m.id} style={vc.item}>{m.nombre}{cant > 1 ? ` ×${cant}` : ""}</div>;
+          })}
+        </>
+      )}
+      <div style={vc.totalBox}>
+        <span style={vc.totalLbl}>TOTAL</span>
+        <span style={vc.totalVal}>{fmt(total)}</span>
+      </div>
+      <div style={vc.nota}>Este presupuesto tiene validez de 10 días hábiles.</div>
+      <div style={vc.hint}>Para compartir: hacé una captura de pantalla de esta sección.</div>
+      <button style={vc.closeBtn} onClick={onClose}>← VOLVER AL RESUMEN</button>
+    </div>
+  );
+}
+
+const vc = {
+  wrap: { background: "#fdfcf9", borderRadius: 8, padding: "24px 20px", fontFamily: "Arial, sans-serif", color: "#1a1a2e" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #f0c040", paddingBottom: 14, marginBottom: 20 },
+  brand: { fontSize: 19, fontWeight: "bold", letterSpacing: "2px" },
+  brandSub: { fontSize: 9, color: "#888", letterSpacing: "3px", marginTop: 2 },
+  meta: { textAlign: "right", fontSize: 12, color: "#555", lineHeight: 1.7 },
+  cliente: { fontWeight: "bold", fontSize: 15, color: "#1a1a2e" },
+  desc: { background: "#f5f4f0", borderRadius: 6, padding: "10px 14px", fontSize: 12, marginBottom: 16, lineHeight: 1.6 },
+  descLbl: { color: "#888", fontSize: 10, textTransform: "uppercase" },
+  secTit: { fontSize: 10, letterSpacing: "2px", color: "#888", textTransform: "uppercase", borderBottom: "1px solid #eee", paddingBottom: 5, marginTop: 16, marginBottom: 4 },
+  item: { fontSize: 12, padding: "7px 2px", borderBottom: "1px solid #f0ede6", color: "#333" },
+  totalBox: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 22, border: "2px solid #f0c040", borderRadius: 8, padding: "14px 18px", background: "#fffdf4" },
+  totalLbl: { fontSize: 14, fontWeight: "bold", letterSpacing: "2px" },
+  totalVal: { fontSize: 22, fontWeight: "bold", color: "#1a1a2e" },
+  nota: { fontSize: 10, color: "#aaa", marginTop: 16, textAlign: "center" },
+  hint: { fontSize: 11, color: "#888", marginTop: 16, marginBottom: 14, background: "#f5f4f0", padding: "10px 14px", borderRadius: 6, lineHeight: 1.5 },
+  closeBtn: { width: "100%", background: "#1a1d27", color: "#f0c040", border: "none", borderRadius: 6, padding: "13px", fontSize: 13, fontWeight: "bold", fontFamily: "'Courier New',monospace", cursor: "pointer" },
+};
+
+export default function App() {
+  const [trabajo, setTrabajo] = useState({ tipo: TIPOS[0], cliente: "", descripcion: "" });
+  const [tareas, setTareas] = useState([emptyT()]);
+  const [mats, setMats] = useState([emptyM()]);
+  const [margen, setMargen] = useState(30);
+  const [sec, setSec] = useState("trabajo");
+  const [historial, setHistorial] = useState([]);
+  const [verHist, setVerHist] = useState(false);
+  const [vistaCliente, setVistaCliente] = useState(false);
+  const [vistaData, setVistaData] = useState(null);
+
+  const totalT = tareas.reduce((s, t) =>
+    t.tipo === "hora"
+      ? s + (parseFloat(t.horas) || 0) * (parseFloat(t.precioHora) || 0)
+      : s + (parseFloat(t.cantidad) || 1) * (parseFloat(t.precio) || 0), 0);
+  const totalM = mats.reduce((s, m) => s + (parseFloat(m.cantidad) || 0) * (parseFloat(m.precioUnit) || 0), 0);
+  const subtotal = totalT + totalM;
+  const ganancia = subtotal * margen / 100;
+  const total = subtotal + ganancia;
+
+  const updT = useCallback((id, f, v) => setTareas(ts => ts.map(t => t.id === id ? { ...t, [f]: v } : t)), []);
+  const selT = (id, op) => setTareas(ts => ts.map(t => t.id === id ? { ...t, nombre: op.nombre, precio: op.precio, tipo: "tarea" } : t));
+  const updM = useCallback((id, f, v) => setMats(ms => ms.map(m => m.id === id ? { ...m, [f]: v } : m)), []);
+  const selM = (id, op) => setMats(ms => ms.map(m => m.id === id ? { ...m, nombre: op.nombre, precioUnit: op.precio } : m));
+
+  const guardar = () => {
+    const p = { id: uid(), fecha: hoy(), cliente: trabajo.cliente || "Sin nombre", tipo: trabajo.tipo, total, datos: { trabajo, tareas, mats, margen } };
+    setHistorial(h => [p, ...h]);
+    setVerHist(true);
+  };
+
+  const cargar = (p) => {
+    setTrabajo(p.datos.trabajo);
+    setTareas(p.datos.tareas);
+    setMats(p.datos.mats);
+    setMargen(p.datos.margen);
+    setSec("trabajo");
+    setVerHist(false);
+  };
+
+  const borrar = (id) => setHistorial(h => h.filter(p => p.id !== id));
+
+  const verParaCliente = (datos) => {
+    setVistaData(datos);
+    setVistaCliente(true);
+  };
+
+  const nuevo = () => {
+    setTrabajo({ tipo: TIPOS[0], cliente: "", descripcion: "" });
+    setTareas([emptyT()]);
+    setMats([emptyM()]);
+    setMargen(30);
+    setSec("trabajo");
+  };
+
+  const inp = { background: "#0f1117", border: "1px solid #2a2d3a", borderRadius: 4, color: "#e8e0d0", padding: "11px 12px", fontSize: 13, fontFamily: "'Courier New',monospace", outline: "none", boxSizing: "border-box", width: "100%" };
+  const sel = { background: "#0f1117", border: "1px solid #3a3d50", borderRadius: 6, color: "#e8e0d0", padding: "12px 14px", fontSize: 13, fontFamily: "'Courier New',monospace", outline: "none", width: "100%" };
+
+  // Vista para cliente
+  if (vistaCliente && vistaData) {
+    return (
+      <div style={{ fontFamily: "'Courier New',monospace", background: "#0f1117", minHeight: "100vh" }}>
+        <div style={{ maxWidth: 740, margin: "0 auto", padding: "24px 16px" }}>
+          <VistaCliente {...vistaData} onClose={() => { setVistaCliente(false); setVistaData(null); setSec("resumen"); }} />
+        </div>
+      </div>
+    );
+  }
+
+  // Vista historial
+  if (verHist) {
+    return (
+      <div style={{ fontFamily: "'Courier New',monospace", background: "#0f1117", minHeight: "100vh", color: "#e8e0d0" }}>
+        <header style={hdr.box}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={hdr.bolt}>⚡</span>
+            <div><div style={hdr.title}>HISTORIAL</div><div style={hdr.sub}>PRESUPUESTOS GUARDADOS</div></div>
+          </div>
+          <button style={hdr.back} onClick={() => setVerHist(false)}>← VOLVER</button>
+        </header>
+        <main style={{ maxWidth: 740, margin: "0 auto", padding: "24px 16px" }}>
+          {historial.length === 0 ? (
+            <div style={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRadius: 8, padding: 48, textAlign: "center", color: "#555" }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+              <div>No hay presupuestos guardados todavía.</div>
+            </div>
+          ) : historial.map(p => (
+            <div key={p.id} style={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRadius: 8, padding: "16px 20px", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: "bold", color: "#e8e0d0", marginBottom: 4 }}>{p.cliente}</div>
+                  <div style={{ fontSize: 11, color: "#666" }}>{p.tipo} · {p.fecha}</div>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: "bold", color: "#f0c040" }}>{fmt(p.total)}</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button style={hbtn.load} onClick={() => cargar(p)}>↩ Cargar y editar</button>
+                <button style={hbtn.ver} onClick={() => {
+                  const d = p.datos;
+                  const tT = d.tareas.reduce((s, t) => t.tipo === "hora" ? s + (parseFloat(t.horas) || 0) * (parseFloat(t.precioHora) || 0) : s + (parseFloat(t.cantidad) || 1) * (parseFloat(t.precio) || 0), 0);
+                  const tM = d.mats.reduce((s, m) => s + (parseFloat(m.cantidad) || 0) * (parseFloat(m.precioUnit) || 0), 0);
+                  const sub = tT + tM;
+                  verParaCliente({ trabajo: d.trabajo, tareas: d.tareas, mats: d.mats, total: sub + sub * d.margen / 100 });
+                }}>📄 Ver para cliente</button>
+                <button style={hbtn.del} onClick={() => borrar(p.id)}>🗑 Borrar</button>
+              </div>
+            </div>
+          ))}
+        </main>
+      </div>
+    );
+  }
+
+  // Vista principal
+  return (
+    <div style={{ fontFamily: "'Courier New',monospace", background: "#0f1117", minHeight: "100vh", color: "#e8e0d0" }}>
+      <header style={hdr.box}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={hdr.bolt}>⚡</span>
+          <div><div style={hdr.title}>PRESUPUESTADOR</div><div style={hdr.sub}>INSTALACIONES ELÉCTRICAS</div></div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+          <div style={{ textAlign: "right", background: "#f0c04012", border: "1px solid #f0c04055", borderRadius: 6, padding: "6px 14px" }}>
+            <div style={{ fontSize: 9, color: "#888", letterSpacing: "0.2em" }}>TOTAL A COBRAR</div>
+            <div style={{ fontSize: 20, fontWeight: "bold", color: "#f0c040" }}>{fmt(total)}</div>
+          </div>
+          <button style={hdr.histBtn} onClick={() => setVerHist(true)}>📋 Historial ({historial.length})</button>
+        </div>
+      </header>
+
+      <nav style={{ display: "flex", background: "#13151e", borderBottom: "1px solid #2a2d3a", overflowX: "auto" }}>
+        {[["trabajo", "📋 TRABAJO"], ["tareas", "🔧 TAREAS"], ["materiales", "🔩 MATERIALES"], ["resumen", "📊 RESUMEN"]].map(([k, l]) => (
+          <button key={k} onClick={() => setSec(k)}
+            style={{ flex: 1, padding: "12px 8px", background: "none", border: "none", color: sec === k ? "#f0c040" : "#555", cursor: "pointer", fontSize: 11, letterSpacing: "0.08em", fontFamily: "'Courier New',monospace", borderBottom: sec === k ? "3px solid #f0c040" : "3px solid transparent", whiteSpace: "nowrap", minWidth: 80 }}>
+            {l}
+          </button>
+        ))}
+      </nav>
+
+      <main style={{ maxWidth: 740, margin: "0 auto", padding: "24px 16px" }}>
+        <div style={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRadius: 8, padding: 24 }}>
+
+          {/* TRABAJO */}
+          {sec === "trabajo" && (
+            <>
+              <h2 style={ct}>DATOS DEL TRABAJO</h2>
+              <div style={fld}>
+                <label style={lbl}>TIPO DE TRABAJO</label>
+                <select style={sel} value={trabajo.tipo} onChange={e => setTrabajo(t => ({ ...t, tipo: e.target.value }))}>
+                  {TIPOS.map(t => <option key={t}>{t}</option>)}
+                </select>
+                <span style={hint}>Las tareas del menú cambian según el tipo</span>
+              </div>
+              <div style={fld}>
+                <label style={lbl}>CLIENTE (opcional)</label>
+                <input style={inp} placeholder="Nombre, empresa o dirección" value={trabajo.cliente}
+                  onChange={e => setTrabajo(t => ({ ...t, cliente: e.target.value }))} />
+              </div>
+              <div style={fld}>
+                <label style={lbl}>DESCRIPCIÓN</label>
+                <textarea style={{ ...inp, minHeight: 80, resize: "vertical" }}
+                  placeholder="Ej: Instalación completa dpto 3 ambientes, 15 bocas..."
+                  value={trabajo.descripcion} onChange={e => setTrabajo(t => ({ ...t, descripcion: e.target.value }))} />
+              </div>
+              <button style={nextBtn} onClick={() => setSec("tareas")}>CONTINUAR → TAREAS</button>
+            </>
+          )}
+
+          {/* TAREAS */}
+          {sec === "tareas" && (
+            <>
+              <h2 style={ct}>MANO DE OBRA — {trabajo.tipo.toUpperCase()}</h2>
+              <p style={hint}>Ref: <strong style={{ color: "#f0c040" }}>electroinstalador.com</strong> mayo-junio 2026. Editables.</p>
+              {tareas.map(t => {
+                const sub = t.tipo === "hora"
+                  ? (parseFloat(t.horas) || 0) * (parseFloat(t.precioHora) || 0)
+                  : (parseFloat(t.cantidad) || 1) * (parseFloat(t.precio) || 0);
+                return (
+                  <div key={t.id} style={ic}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <Dropdown opciones={DB_TAREAS[trabajo.tipo] || []} placeholder="Seleccionar tarea..." valor={t.nombre} onSelect={op => selT(t.id, op)} />
+                      <button style={delBtn} onClick={() => setTareas(ts => ts.filter(x => x.id !== t.id))}>✕</button>
+                    </div>
+                    {t.nombre && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e2130" }}>
+                        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+                          {["tarea", "hora"].map(tp => (
+                            <button key={tp} style={{ background: "none", border: `1px solid ${t.tipo === tp ? "#f0c040" : "#2a2d3a"}`, color: t.tipo === tp ? "#f0c040" : "#555", borderRadius: 4, padding: "5px 14px", fontSize: 10, fontFamily: "'Courier New',monospace", cursor: "pointer" }}
+                              onClick={() => updT(t.id, "tipo", tp)}>
+                              {tp === "tarea" ? "PRECIO FIJO" : "POR HORA"}
+                            </button>
+                          ))}
+                        </div>
+                        {t.tipo === "tarea" ? (
+                          <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+                            <div><label style={lblSm}>CANTIDAD</label>
+                              <input style={{ ...inp, width: 80 }} type="number" min="0" value={t.cantidad}
+                                onChange={e => updT(t.id, "cantidad", e.target.value)} /></div>
+                            <div><label style={lblSm}>PRECIO UNIT. ($)</label>
+                              <input style={{ ...inp, width: 130 }} type="number" min="0" value={t.precio}
+                                onChange={e => updT(t.id, "precio", e.target.value)} /></div>
+                            <div style={subt}>{fmt(sub)}</div>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+                            <div><label style={lblSm}>HORAS</label>
+                              <input style={{ ...inp, width: 80 }} type="number" min="0" value={t.horas}
+                                onChange={e => updT(t.id, "horas", e.target.value)} /></div>
+                            <div><label style={lblSm}>$ / HORA</label>
+                              <input style={{ ...inp, width: 130 }} type="number" min="0" value={t.precioHora}
+                                onChange={e => updT(t.id, "precioHora", e.target.value)} /></div>
+                            <div style={subt}>{fmt(sub)}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button style={addBtn} onClick={() => setTareas(ts => [...ts, emptyT()])}>+ AGREGAR TAREA</button>
+              <div style={secTot}><span>TOTAL MANO DE OBRA</span><span style={{ color: "#f0c040", fontWeight: "bold" }}>{fmt(totalT)}</span></div>
+              <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+                <button style={backBtn} onClick={() => setSec("trabajo")}>← ATRÁS</button>
+                <button style={nextBtn} onClick={() => setSec("materiales")}>CONTINUAR → MATERIALES</button>
+              </div>
+            </>
+          )}
+
+          {/* MATERIALES */}
+          {sec === "materiales" && (
+            <>
+              <h2 style={ct}>MATERIALES</h2>
+              <p style={hint}>Ref: <strong style={{ color: "#f0c040" }}>MercadoLibre</strong> CABA/GBA mayo 2026. Editables.</p>
+              {mats.map(m => {
+                const sub = (parseFloat(m.cantidad) || 0) * (parseFloat(m.precioUnit) || 0);
+                return (
+                  <div key={m.id} style={ic}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={lblSm}>CATEGORÍA</label>
+                          <select style={{ ...sel, width: "100%" }} value={m.categoria} onChange={e => updM(m.id, "categoria", e.target.value)}>
+                            {CATS.map(c => <option key={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <button style={{ ...delBtn, alignSelf: "flex-end" }} onClick={() => setMats(ms => ms.filter(x => x.id !== m.id))}>✕</button>
+                      </div>
+                      <div>
+                        <label style={lblSm}>MATERIAL</label>
+                        <Dropdown opciones={DB_MATERIALES[m.categoria] || []} placeholder="Seleccionar material..." valor={m.nombre} onSelect={op => selM(m.id, op)} />
+                      </div>
+                    </div>
+                    {m.nombre && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e2130", display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div><label style={lblSm}>CANTIDAD</label>
+                          <input style={{ ...inp, width: 80 }} type="number" min="0" value={m.cantidad}
+                            onChange={e => updM(m.id, "cantidad", e.target.value)} /></div>
+                        <div><label style={lblSm}>PRECIO UNIT. ($)</label>
+                          <input style={{ ...inp, width: 130 }} type="number" min="0" value={m.precioUnit}
+                            onChange={e => updM(m.id, "precioUnit", e.target.value)} /></div>
+                        <div style={subt}>{fmt(sub)}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button style={addBtn} onClick={() => setMats(ms => [...ms, emptyM()])}>+ AGREGAR MATERIAL</button>
+              <div style={secTot}><span>TOTAL MATERIALES</span><span style={{ color: "#f0c040", fontWeight: "bold" }}>{fmt(totalM)}</span></div>
+              <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+                <button style={backBtn} onClick={() => setSec("tareas")}>← ATRÁS</button>
+                <button style={nextBtn} onClick={() => setSec("resumen")}>VER RESUMEN →</button>
+              </div>
+            </>
+          )}
+
+          {/* RESUMEN */}
+          {sec === "resumen" && (
+            <>
+              <h2 style={ct}>RESUMEN</h2>
+              {(trabajo.cliente || trabajo.descripcion) && (
+                <div style={{ background: "#13151e", border: "1px solid #2a2d3a", borderRadius: 6, padding: "12px 16px", marginBottom: 20, fontSize: 13, lineHeight: 1.9 }}>
+                  {trabajo.cliente && <div><span style={{ color: "#f0c040", fontSize: 10, letterSpacing: "0.1em", marginRight: 6 }}>CLIENTE:</span>{trabajo.cliente}</div>}
+                  <div><span style={{ color: "#f0c040", fontSize: 10, letterSpacing: "0.1em", marginRight: 6 }}>TIPO:</span>{trabajo.tipo}</div>
+                  {trabajo.descripcion && <div style={{ marginTop: 4, opacity: 0.7, fontSize: 12 }}>{trabajo.descripcion}</div>}
+                </div>
+              )}
+              {tareas.some(t => t.nombre) && (
+                <div style={secTot}><span>MANO DE OBRA</span><span>{fmt(totalT)}</span></div>
+              )}
+              {mats.some(m => m.nombre) && (
+                <div style={secTot}><span>MATERIALES</span><span>{fmt(totalM)}</span></div>
+              )}
+              <div style={{ background: "#13151e", border: "1px solid #2a2d3a", borderRadius: 6, padding: 16, margin: "20px 0 14px" }}>
+                <label style={{ fontSize: 10, color: "#888", letterSpacing: "0.14em" }}>MARGEN DE GANANCIA</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+                  <input type="range" min={0} max={100} step={1} value={margen} onChange={e => setMargen(Number(e.target.value))} style={{ flex: 1, accentColor: "#f0c040" }} />
+                  <div style={{ background: "#f0c040", color: "#0f1117", fontWeight: "bold", padding: "4px 10px", borderRadius: 4, fontSize: 14, minWidth: 46, textAlign: "center" }}>{margen}%</div>
+                  <div style={{ color: "#f0c040", fontSize: 13, whiteSpace: "nowrap" }}>+{fmt(ganancia)}</div>
+                </div>
+              </div>
+              <div style={{ background: "#0d0f18", border: "1px solid #f0c04035", borderRadius: 6, padding: 16, marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "4px 0", color: "#999" }}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "4px 0", color: "#999" }}><span>Ganancia ({margen}%)</span><span style={{ color: "#f0c040" }}>+{fmt(ganancia)}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: "bold", color: "#f0c040", borderTop: "2px solid #f0c04055", marginTop: 8, paddingTop: 10 }}><span>TOTAL A COBRAR</span><span>{fmt(total)}</span></div>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button style={{ flex: 1, background: "#1e3a1e", border: "1px solid #3a6a3a", color: "#6fcc6f", borderRadius: 4, padding: "13px", fontSize: 12, fontWeight: "bold", fontFamily: "'Courier New',monospace", cursor: "pointer" }}
+                  onClick={guardar}>💾 GUARDAR</button>
+                <button style={{ flex: 1, background: "#1e2a3a", border: "1px solid #3a5a7a", color: "#6faacc", borderRadius: 4, padding: "13px", fontSize: 12, fontWeight: "bold", fontFamily: "'Courier New',monospace", cursor: "pointer" }}
+                  onClick={() => verParaCliente({ trabajo, tareas, mats, total })}>👁 VER PARA CLIENTE</button>
+                <button style={backBtn} onClick={nuevo}>＋ NUEVO</button>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+const hdr = {
+  box: { background: "#1a1d27", borderBottom: "3px solid #f0c040", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" },
+  bolt: { fontSize: 30, filter: "drop-shadow(0 0 8px #f0c040)" },
+  title: { fontSize: 20, fontWeight: "bold", color: "#f0c040", letterSpacing: "0.15em" },
+  sub: { fontSize: 10, color: "#666", letterSpacing: "0.2em" },
+  back: { background: "none", border: "1px solid #2a2d3a", color: "#888", borderRadius: 4, padding: "10px 16px", fontSize: 12, fontFamily: "'Courier New',monospace", cursor: "pointer" },
+  histBtn: { background: "none", border: "1px solid #2a2d3a", color: "#888", borderRadius: 4, padding: "5px 12px", fontSize: 11, fontFamily: "'Courier New',monospace", cursor: "pointer" },
+};
+const hbtn = {
+  load: { background: "none", border: "1px solid #3a4a3a", color: "#8aaa8a", borderRadius: 4, padding: "8px 14px", fontSize: 11, fontFamily: "'Courier New',monospace", cursor: "pointer" },
+  ver: { background: "none", border: "1px solid #3a4a5a", color: "#7aaacc", borderRadius: 4, padding: "8px 14px", fontSize: 11, fontFamily: "'Courier New',monospace", cursor: "pointer" },
+  del: { background: "none", border: "1px solid #4a2a2a", color: "#cc7a7a", borderRadius: 4, padding: "8px 14px", fontSize: 11, fontFamily: "'Courier New',monospace", cursor: "pointer" },
+};
+const ct = { fontSize: 13, letterSpacing: "0.18em", color: "#f0c040", margin: "0 0 14px 0", borderBottom: "1px solid #2a2d3a", paddingBottom: 12 };
+const fld = { marginBottom: 16, display: "flex", flexDirection: "column", gap: 5 };
+const lbl = { fontSize: 10, color: "#888", letterSpacing: "0.14em" };
+const lblSm = { fontSize: 9, color: "#666", letterSpacing: "0.1em", display: "block", marginBottom: 4 };
+const hint = { fontSize: 11, color: "#556", margin: "0 0 14px 0" };
+const ic = { background: "#13151e", border: "1px solid #2a2d3a", borderRadius: 6, padding: 14, marginBottom: 10 };
+const subt = { padding: "11px 14px", background: "#0d0f18", border: "1px solid #1e2130", borderRadius: 4, fontSize: 14, color: "#f0c040", whiteSpace: "nowrap", marginLeft: "auto", fontWeight: "bold" };
+const delBtn = { background: "none", border: "1px solid #3a2020", color: "#b03030", borderRadius: 4, width: 36, height: 42, cursor: "pointer", fontSize: 12, flexShrink: 0 };
+const addBtn = { background: "none", border: "1px dashed #2a2d3a", color: "#555", borderRadius: 4, padding: "12px 16px", cursor: "pointer", fontSize: 11, fontFamily: "'Courier New',monospace", width: "100%", marginTop: 4 };
+const secTot = { display: "flex", justifyContent: "space-between", borderTop: "1px solid #2a2d3a", paddingTop: 12, marginTop: 12, fontSize: 12, color: "#999", letterSpacing: "0.08em", marginBottom: 4 };
+const nextBtn = { flex: 1, background: "#f0c040", color: "#0f1117", border: "none", borderRadius: 4, padding: "13px 16px", fontSize: 12, fontWeight: "bold", letterSpacing: "0.1em", fontFamily: "'Courier New',monospace", cursor: "pointer" };
+const backBtn = { background: "none", border: "1px solid #2a2d3a", color: "#777", borderRadius: 4, padding: "12px 16px", fontSize: 12, fontFamily: "'Courier New',monospace", cursor: "pointer" };
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
